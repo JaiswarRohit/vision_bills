@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Laser Vision Cable – Bill Generator</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap"
+    rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="src/logo_data.js"></script>
+
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* ── LIGHT THEME (default for light-mode OS) ── */
+    :root {
+      --bg: #f0f2f5;
+      --panel: #ffffff;
+      --border: #e2e8f0;
+      --accent: #3b82f6;
+      --accent2: #2563eb;
+      --text: #1e293b;
+      --muted: #64748b;
+      --input-bg: #f8fafc;
+      --input-border: #cbd5e1;
+      --success: #10b981;
+      --shadow: rgba(0, 0, 0, .08);
+      --scrollbar-track: #e5e7eb;
+      --scrollbar-thumb: #94a3b8;
+      --preview-bg: #d1d5db;
+      --preview-scrollbar-track: #c1c5cd;
+      --preview-scrollbar-thumb: #9ca3af;
+    }
+
+    /* ── DARK THEME (for dark-mode OS) ── */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1117;
+        --panel: #171b27;
+        --border: #252b3b;
+        --accent: #3b82f6;
+        --accent2: #60a5fa;
+        --text: #e2e8f0;
+        --muted: #64748b;
+        --input-bg: #1e2433;
+        --input-border: #2d3748;
+        --success: #10b981;
+        --shadow: rgba(0, 0, 0, .35);
+        --scrollbar-track: transparent;
+        --scrollbar-thumb: #252b3b;
+        --preview-bg: #d1d5db;
+        --preview-scrollbar-track: #c1c5cd;
+        --preview-scrollbar-thumb: #9ca3af;
+      }
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    header .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      color: var(--accent2);
+    }
+
+    header .logo svg {
+      opacity: .85;
+    }
+
+    header .tagline {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: .06em;
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-action {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s, transform .1s;
+    }
+
+    .btn-action:active {
+      transform: scale(.97);
+    }
+
+    .btn-download {
+      background: var(--accent);
+    }
+
+    .btn-download:hover {
+      background: #2563eb;
+    }
+
+    /* ── MAIN LAYOUT ── */
+    .workspace {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      flex: 1;
+      overflow: hidden;
+      height: calc(100vh - 65px);
+    }
+
+    /* ── FORM PANEL ── */
+    .form-panel {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .form-panel::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .form-panel::-webkit-scrollbar-track {
+      background: var(--scrollbar-track);
+    }
+
+    .form-panel::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb, var(--border));
+      border-radius: 4px;
+    }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 13px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color .2s;
+      width: 100%;
+    }
+
+    .field input:focus,
+    .field textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 72px;
+    }
+
+    .row2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* Plan rows */
+    .plan-row {
+      display: grid;
+      grid-template-columns: 1fr auto 80px auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .plan-row input {
+      min-width: 0;
+    }
+
+    .plan-row .amount-prefix {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .icon-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: all .15s;
+    }
+
+    .icon-btn:hover {
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
+    .add-plan-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: transparent;
+      border: 1px dashed var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      width: 100%;
+      font-family: 'DM Sans', sans-serif;
+      transition: all .15s;
+      margin-top: 4px;
+    }
+
+    .add-plan-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent2);
+    }
+
+    /* ── PREVIEW PANEL ── */
+    .preview-panel {
+      background: var(--preview-bg);
+      overflow-y: auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 24px;
+    }
+
+    .preview-panel::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .preview-panel::-webkit-scrollbar-track {
+      background: var(--preview-scrollbar-track);
+    }
+
+    .preview-panel::-webkit-scrollbar-thumb {
+      background: var(--preview-scrollbar-thumb);
+      border-radius: 4px;
+    }
+
+    /* ── BILL TEMPLATE ── */
+    #bill-preview {
+      width: 210mm;
+      background: #fff;
+      color: #000;
+      padding: 28px 32px;
+      box-shadow: 0 20px 60px var(--shadow);
+      font-family: 'Arial', sans-serif;
+      position: relative;
+    }
+
+    .bill-header {
+      text-align: center;
+      border-bottom: 2px solid #1e40af;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+    }
+
+    .bill-logo-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .bill-logo-text {
+      font-size: 34px;
+      font-weight: 900;
+      color: #1e40af;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif;
+      text-shadow: 2px 2px 0 #93c5fd;
+    }
+
+    .bill-company-address {
+      font-size: 12px;
+      color: #374151;
+      margin-top: 6px;
+      font-weight: 600;
+    }
+
+    .wifi-icon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .wifi-arc {
+      border: 3px solid #1e40af;
+      border-bottom: none;
+      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    }
+
+    .arc1 {
+      width: 36px;
+      height: 18px;
+    }
+
+    .arc2 {
+      width: 26px;
+      height: 13px;
+    }
+
+    .arc3 {
+      width: 16px;
+      height: 8px;
+    }
+
+    .wifi-dot {
+      width: 7px;
+      height: 7px;
+      background: #1e40af;
+      border-radius: 50%;
+      margin-top: 2px;
+    }
+
+    .bill-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 18px;
+      gap: 20px;
+    }
+
+    .bill-customer {
+      flex: 1;
+      min-width: 0;
+      /* allows flex children to shrink below their content size */
+      word-wrap: break-word;
+      /* force long unbroken strings to wrap */
+      overflow-wrap: break-word;
+      margin-right: 20px;
+    }
+
+    .bill-meta-label {
+      font-size: 12px;
+      color: #1e40af;
+      font-weight: 700;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .bill-meta-value {
+      font-size: 12px;
+      color: #111;
+      font-weight: 600;
+      min-width: 0;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .bill-meta-line {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 5px;
+      align-items: baseline;
+    }
+
+    .bill-date {
+      text-align: right;
+      white-space: nowrap;
+      flex-shrink: 0;
+      /* prevent date from being squished by long names */
+    }
+
+    /* Table */
+    .bill-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 0;
+    }
+
+    .bill-table th {
+      background: #eff6ff;
+      border: 1px solid #93c5fd;
+      padding: 9px 14px;
+      font-size: 13px;
+      color: #1e40af;
+      font-weight: 700;
+      text-align: left;
+    }
+
+    .bill-table th:last-child {
+      text-align: right;
+    }
+
+    .bill-table td {
+      border: 1px solid #dbeafe;
+      padding: 10px 14px;
+      font-size: 12.5px;
+      color: #111;
+    }
+
+    .bill-table td:last-child {
+      text-align: right;
+      font-weight: 700;
+    }
+
+    /* Spacer rows for blank lines */
+    .bill-table .blank-row td {
+      height: 28px;
+      border-left: 1px solid #dbeafe;
+      border-right: 1px solid #dbeafe;
+      border-top: none;
+      border-bottom: none;
+    }
+
+    .bill-total-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid #93c5fd;
+      background: #eff6ff;
+      padding: 10px 14px;
+      margin-top: 0;
+    }
+
+    .bill-words {
+      font-size: 12px;
+      color: #1e40af;
+    }
+
+    .bill-words span {
+      font-weight: 700;
+      color: #111;
+      font-size: 12px;
+    }
+
+    .bill-total-amt {
+      font-size: 14px;
+      font-weight: 800;
+      color: #1e40af;
+    }
+
+    .bill-notes {
+      margin-top: 22px;
+      font-size: 11.5px;
+      color: #374151;
+    }
+
+    .bill-notes p {
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .bill-notes ol {
+      padding-left: 20px;
+    }
+
+    .bill-notes ol li {
+      margin-bottom: 4px;
+      line-height: 1.5;
+    }
+
+    .bill-footer {
+      margin-top: 40px;
+      text-align: center;
+      border-top: 1px solid #dbeafe;
+      padding-top: 14px;
+    }
+
+    .bill-footer p {
+      font-size: 12px;
+      color: #1e40af;
+      font-weight: 700;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--success);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all .3s ease;
+      z-index: 999;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    @media (max-width: 900px) {
+      .workspace {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+
+      .form-panel {
+        max-height: 55vh;
+      }
+
+      /* Bill preview stays A4 – panel scrolls horizontally */
+      .preview-panel {
+        overflow-x: auto;
+        padding: 20px 12px;
+      }
+
+      .header-actions {
+        gap: 6px;
+      }
+
+      .btn-action {
+        padding: 8px 12px;
+        font-size: 12px;
+        gap: 4px;
+      }
+    }
+
+    /* Required field error state */
+    .field-error input,
+    .field-error textarea {
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+    }
+
+    .field-error label {
+      color: #ef4444 !important;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div>
+      <div class="logo">
+        <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
+          <path d="M1 6C4.5 2.5 17.5 2.5 21 6" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" />
+          <path d="M4 9.5C6.5 7 15.5 7 18 9.5" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" />
+          <path d="M7 13C8.5 11.5 13.5 11.5 15 13" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" />
+          <circle cx="11" cy="16" r="1.5" fill="#60a5fa" />
+        </svg>
+        Laser Vision Cable
+      </div>
+      <div class="tagline">Bill Generator</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-action btn-download" onclick="downloadPDF()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4" />
+        </svg>
+        Download Bill
+      </button>
+    </div>
+  </header>
+
+  <!-- WORKSPACE -->
+  <div class="workspace">
+
+    <!-- ── FORM ── -->
+    <div class="form-panel">
+
+      <!-- Company Info -->
+      <div>
+        <div class="section-label">Logo & Company Info</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+
+          <!-- Logo Upload -->
+          <div class="field">
+            <label>Company Logo</label>
+            <div id="logo-drop-zone" onclick="document.getElementById('logoFileInput').click()"
+              style="border:2px dashed var(--input-border);border-radius:10px;padding:16px 12px;cursor:pointer;text-align:center;transition:border-color .2s;background:var(--input-bg);position:relative;">
+              <input type="file" id="logoFileInput" accept="image/*" style="display:none"
+                onchange="handleLogoUpload(event)" />
+              <div id="logo-placeholder">
+                <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="#64748b" stroke-width="1.5"
+                  style="margin:0 auto 6px;">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <div style="font-size:12px;color:var(--muted);">Click to upload logo image</div>
+                <div style="font-size:11px;color:#475569;margin-top:3px;">PNG, JPG, SVG supported</div>
+              </div>
+              <div id="logo-preview-wrap" style="display:none;flex-direction:column;align-items:center;gap:8px;">
+                <img id="logo-preview-img"
+                  style="max-height:64px;max-width:100%;border-radius:6px;object-fit:contain;" />
+                <button onclick="removeLogo(event)"
+                  style="font-size:11px;color:#ef4444;background:transparent;border:1px solid #ef4444;border-radius:5px;padding:3px 10px;cursor:pointer;font-family:DM Sans,sans-serif;">Remove</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Logo display mode toggle -->
+          <div class="field">
+            <label>Logo Display Style</label>
+            <select id="logoDisplayMode" onchange="render()"
+              style="background:var(--input-bg);border:1px solid var(--input-border);border-radius:8px;color:var(--text);font-family:DM Sans,sans-serif;font-size:14px;padding:10px 12px;outline:none;">
+              <option value="both">Logo Image + Company Name Text</option>
+              <option value="image-only">Logo Image Only</option>
+              <option value="text-only">Company Name Text Only</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Company Name</label>
+            <input id="companyName" value="LASER VISION CABLE" oninput="render()" />
+          </div>
+          <div class="field">
+            <label>Company Address</label>
+            <input id="companyAddress"
+              value="Room No. 5, 1st Floor, Kapur Mansion, 10 Morland Road, Agripada, Mumbai 400 011."
+              oninput="render()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Info -->
+      <div>
+        <div class="section-label">Customer Details</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div class="field">
+            <label>Customer Name</label>
+            <input id="custName" placeholder="Customer Name" oninput="render()" />
+          </div>
+          <div class="field">
+            <label>Customer Address</label>
+            <textarea id="custAddress" placeholder="Agripada, Mumbai 400 011." oninput="render()"></textarea>
+          </div>
+          <div class="field">
+            <label>Bill Date</label>
+            <input type="date" id="billDate" oninput="render()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Plans -->
+      <div>
+        <div class="section-label">Plans / Services</div>
+        <div id="plans-container" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <button class="add-plan-btn" onclick="addPlan()">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          Add Plan Row
+        </button>
+      </div>
+
+      <!-- Notes -->
+      <div>
+        <div class="section-label">Notes (shown on bill)</div>
+        <div id="notes-container" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <button class="add-plan-btn" onclick="addNote()">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          Add Note
+        </button>
+      </div>
+
+      <!-- Footer -->
+      <div>
+        <div class="section-label">Footer Contact</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div class="field">
+            <label>Contact Numbers</label>
+            <input id="contactNos" value="9594592257 / 8268217279" oninput="render()" />
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── PREVIEW ── -->
+    <div class="preview-panel">
+      <div id="bill-preview">
+
+        <!-- Bill Header -->
+        <div class="bill-header">
+          <div class="bill-logo-row" id="prev-logo-row">
+            <!-- Default WiFi icon (hidden by default, shown only as fallback) -->
+            <div class="wifi-icon" id="prev-wifi-icon" style="display:none;">
+              <div class="wifi-arc arc1"></div>
+              <div class="wifi-arc arc2"></div>
+              <div class="wifi-arc arc3"></div>
+              <div class="wifi-dot"></div>
+            </div>
+            <!-- Logo image (default set by JS from embedded data URL) -->
+            <img id="prev-logo-img" style="max-height:72px;max-width:180px;object-fit:contain;" />
+            <!-- Company name text -->
+            <div class="bill-logo-text" id="prev-company-name">LASER VISION CABLE</div>
+          </div>
+          <div class="bill-company-address" id="prev-company-address">Room No. 5, 1st Floor, Kapur Mansion, 10 Morland
+            Road, Agripada, Mumbai 400 011.</div>
+        </div>
+
+        <!-- Customer + Date -->
+        <div class="bill-meta">
+          <div class="bill-customer">
+            <div class="bill-meta-line">
+              <span class="bill-meta-label">Name Of Customer : </span>
+              <span class="bill-meta-value" id="prev-cust-name">–</span>
+            </div>
+            <div class="bill-meta-line">
+              <span class="bill-meta-label">Address : </span>
+              <span class="bill-meta-value" id="prev-cust-addr" style="white-space:pre-line;">–</span>
+            </div>
+          </div>
+          <div class="bill-date">
+            <span class="bill-meta-label">Date : </span>
+            <span class="bill-meta-value" id="prev-date">–</span>
+          </div>
+        </div>
+
+        <!-- Plans Table -->
+        <table class="bill-table">
+          <thead>
+            <tr>
+              <th>Plan</th>
+              <th style="text-align:right;">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="prev-plan-rows">
+            <tr class="blank-row">
+              <td></td>
+              <td></td>
+            </tr>
+            <tr class="blank-row">
+              <td></td>
+              <td></td>
+            </tr>
+            <tr class="blank-row">
+              <td></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Total Bar -->
+        <div class="bill-total-bar">
+          <div class="bill-words">In Word : <span id="prev-words">–</span></div>
+          <div class="bill-total-amt">Total Amount : <span id="prev-total">0/-</span></div>
+        </div>
+
+        <!-- Notes -->
+        <div class="bill-notes">
+          <p>Note:</p>
+          <ol id="prev-notes"></ol>
+        </div>
+
+        <!-- Footer -->
+        <div class="bill-footer">
+          <p>For any Complain &amp; Inquires</p>
+          <p>Contact No:- <span id="prev-contact">9594592257 / 8268217279</span></p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+    PDF Downloaded!
+  </div>
+
+  <script>
+    // ── STATE ──
+    let plans = [
+      { plan: "50 Mbps Unlimited 365 Days (09/09/25 to 10/09/26)", amount: "6000" }
+    ];
+    let notes = [
+      "Installation Charges will not be Refundable.",
+      "Router Configuration charges will be Rs. 100/- per visit.",
+      "Please Ensure your wireless Router is Secure, \"LASER VISION CABLE\", will not be responsible of any unauthorised internet."
+    ];
+    let uploadedLogoSrc = null;
+    // Use embedded base64 data URL from src/logo_data.js (avoids file:// taint)
+    const DEFAULT_LOGO = (typeof LOGO_DATA_URL !== 'undefined') ? LOGO_DATA_URL : 'src/logo.png';
+
+    // ── INIT ──
+    window.addEventListener('DOMContentLoaded', () => {
+      // Set default logo src from embedded data
+      document.getElementById('prev-logo-img').src = DEFAULT_LOGO;
+      const today = new Date();
+      document.getElementById('billDate').value = today.toISOString().slice(0, 10);
+      renderPlanInputs();
+      renderNoteInputs();
+      render();
+
+      // Drag-over highlight on drop zone
+      const dz = document.getElementById('logo-drop-zone');
+      dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.borderColor = 'var(--accent)'; });
+      dz.addEventListener('dragleave', () => { dz.style.borderColor = 'var(--input-border)'; });
+      dz.addEventListener('drop', e => {
+        e.preventDefault();
+        dz.style.borderColor = 'var(--input-border)';
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) processLogoFile(file);
+      });
+    });
+
+    // ── LOGO UPLOAD ──
+    function handleLogoUpload(e) {
+      const file = e.target.files[0];
+      if (file) processLogoFile(file);
+    }
+
+    function processLogoFile(file) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        uploadedLogoSrc = ev.target.result;
+        // Show preview in form
+        document.getElementById('logo-placeholder').style.display = 'none';
+        const wrap = document.getElementById('logo-preview-wrap');
+        wrap.style.display = 'flex';
+        document.getElementById('logo-preview-img').src = uploadedLogoSrc;
+        // Auto-switch mode to 'both' if text-only was selected
+        if (document.getElementById('logoDisplayMode').value === 'text-only') {
+          document.getElementById('logoDisplayMode').value = 'both';
+        }
+        render();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeLogo(e) {
+      e.stopPropagation();
+      uploadedLogoSrc = null;
+      document.getElementById('logo-placeholder').style.display = 'block';
+      document.getElementById('logo-preview-wrap').style.display = 'none';
+      document.getElementById('logoFileInput').value = '';
+      render();
+    }
+
+    // ── PLAN INPUTS ──
+    function renderPlanInputs() {
+      const c = document.getElementById('plans-container');
+      c.innerHTML = '';
+      plans.forEach((p, i) => {
+        const div = document.createElement('div');
+        div.className = 'plan-row';
+        div.innerHTML = `
+      <input style="grid-column:1" value="${p.plan}" placeholder="Plan description" oninput="plans[${i}].plan=this.value;render()" />
+      <span class="amount-prefix">₹</span>
+      <input value="${p.amount}" placeholder="0" type="number" min="0" oninput="plans[${i}].amount=this.value;render()" />
+      <button class="icon-btn" onclick="removePlan(${i})" title="Remove">✕</button>
+    `;
+        c.appendChild(div);
+      });
+    }
+
+    function addPlan() {
+      plans.push({ plan: '', amount: '' });
+      renderPlanInputs();
+      render();
+    }
+
+    function removePlan(i) {
+      if (plans.length === 1) return;
+      plans.splice(i, 1);
+      renderPlanInputs();
+      render();
+    }
+
+    // ── NOTE INPUTS ──
+    function renderNoteInputs() {
+      const c = document.getElementById('notes-container');
+      c.innerHTML = '';
+      notes.forEach((n, i) => {
+        const div = document.createElement('div');
+        div.style.cssText = 'display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start';
+        div.innerHTML = `
+      <textarea oninput="notes[${i}]=this.value;render()" style="min-height:52px;resize:vertical;background:var(--input-bg);border:1px solid var(--input-border);border-radius:8px;color:var(--text);font-family:DM Sans,sans-serif;font-size:13px;padding:8px 10px;outline:none;width:100%;">${n}</textarea>
+      <button class="icon-btn" onclick="removeNote(${i})" title="Remove" style="margin-top:4px;">✕</button>
+    `;
+        c.appendChild(div);
+      });
+    }
+
+    function addNote() {
+      notes.push('');
+      renderNoteInputs();
+      render();
+    }
+
+    function removeNote(i) {
+      notes.splice(i, 1);
+      renderNoteInputs();
+      render();
+    }
+
+    // ── NUMBER TO WORDS ──
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+      'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+    function numToWords(n) {
+      n = parseInt(n) || 0;
+      if (n === 0) return 'Zero';
+      if (n < 20) return ones[n];
+      if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+      if (n < 1000) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + numToWords(n % 100) : '');
+      if (n < 100000) return numToWords(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 ? ' ' + numToWords(n % 1000) : '');
+      if (n < 10000000) return numToWords(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 ? ' ' + numToWords(n % 100000) : '');
+      return numToWords(Math.floor(n / 10000000)) + ' Crore' + (n % 10000000 ? ' ' + numToWords(n % 10000000) : '');
+    }
+
+    // ── FORMAT DATE ──
+    function fmtDate(val) {
+      if (!val) return '–';
+      const [y, m, d] = val.split('-');
+      return `${d} / ${m} / ${y}`;
+    }
+
+    // ── MAIN RENDER ──
+    function render() {
+      const mode = document.getElementById('logoDisplayMode').value;
+      const wifiIcon = document.getElementById('prev-wifi-icon');
+      const logoImg = document.getElementById('prev-logo-img');
+      const nameEl = document.getElementById('prev-company-name');
+
+      // Determine which logo source to use (uploaded or default)
+      const logoSrc = uploadedLogoSrc || DEFAULT_LOGO;
+
+      // Show/hide logo image vs wifi-icon fallback
+      if (mode === 'text-only') {
+        // Text-only: hide logo image, show wifi icon as decorative element
+        logoImg.style.display = 'none';
+        wifiIcon.style.display = 'flex';
+      } else {
+        // Both or image-only: show the logo image (uploaded or default)
+        logoImg.src = logoSrc;
+        logoImg.style.display = 'block';
+        wifiIcon.style.display = 'none';
+      }
+
+      // Show/hide company name text
+      nameEl.style.display = (mode === 'image-only') ? 'none' : 'block';
+      nameEl.textContent = document.getElementById('companyName').value || 'LASER VISION CABLE';
+
+      // Company address
+      document.getElementById('prev-company-address').textContent =
+        document.getElementById('companyAddress').value;
+
+      // Customer
+      document.getElementById('prev-cust-name').textContent =
+        document.getElementById('custName').value || '–';
+      document.getElementById('prev-cust-addr').textContent =
+        document.getElementById('custAddress').value || '–';
+      document.getElementById('prev-date').textContent =
+        fmtDate(document.getElementById('billDate').value);
+
+      // Plans table
+      const tbody = document.getElementById('prev-plan-rows');
+      const activePlans = plans.filter(p => p.plan || p.amount);
+      let rows = '';
+      activePlans.forEach(p => {
+        rows += `<tr>
+      <td>${p.plan || ''}</td>
+      <td>${p.amount ? p.amount + '/-' : ''}</td>
+    </tr>`;
+      });
+      const blanks = Math.max(3, 5 - activePlans.length);
+      for (let i = 0; i < blanks; i++) {
+        rows += `<tr class="blank-row"><td>&nbsp;</td><td></td></tr>`;
+      }
+      tbody.innerHTML = rows;
+
+      // Total
+      const total = plans.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+      document.getElementById('prev-total').textContent = total ? `${total}/-` : '0/-';
+      document.getElementById('prev-words').textContent = total ? numToWords(total) + ' only' : '–';
+
+      // Notes
+      const notesList = document.getElementById('prev-notes');
+      notesList.innerHTML = notes.filter(n => n.trim()).map(n => `<li>${n}</li>`).join('');
+
+      // Contact
+      document.getElementById('prev-contact').textContent =
+        document.getElementById('contactNos').value;
+    }
+
+    // ── VALIDATE REQUIRED FIELDS ──
+    function validateRequired() {
+      const nameField = document.getElementById('custName');
+      const addrField = document.getElementById('custAddress');
+      const nameWrap = nameField.closest('.field');
+      const addrWrap = addrField.closest('.field');
+      let valid = true;
+
+      // Clear previous errors
+      nameWrap.classList.remove('field-error');
+      addrWrap.classList.remove('field-error');
+
+      if (!nameField.value.trim()) {
+        nameWrap.classList.add('field-error');
+        nameField.focus();
+        valid = false;
+      }
+      if (!addrField.value.trim()) {
+        addrWrap.classList.add('field-error');
+        if (valid) addrField.focus();
+        valid = false;
+      }
+
+      if (!valid) {
+        showToast('Please fill Customer Name and Address.');
+      }
+      return valid;
+    }
+
+    // ── GENERATE PDF BLOB ──
+    async function generatePDFBlob() {
+      const bill = document.getElementById('bill-preview');
+
+      // Temporarily remove box-shadow so it doesn't artificially inflate the canvas size
+      const originalShadow = bill.style.boxShadow;
+      bill.style.boxShadow = 'none';
+
+      const canvas = await html2canvas(bill, {
+        scale: 4,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        windowWidth: 1024
+      });
+
+      // Restore it after capture
+      bill.style.boxShadow = originalShadow;
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+
+      const ratio = canvas.width / canvas.height;
+      const imgW = pageW;
+      const imgH = pageW / ratio;
+
+      let heightLeft = imgH;
+      let position = 0;
+
+      // First page
+      pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
+      heightLeft -= pageH;
+
+      // Loop over remaining height, adding new pages
+      // By shifting up slightly LESS than the full page height, we prevent a huge gap
+      // from skipping the gap between pages, but html2canvas will always cut exactly
+      // at the height. We'll add a 10px overlap so no text is completely lost in the seam.
+      const overlap = 5;
+
+      while (heightLeft > 8) {
+        position = position - pageH + overlap;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
+        heightLeft -= (pageH - overlap);
+      }
+
+      const name = (document.getElementById('custName').value || 'Bill').replace(/\s+/g, '_');
+      const fileName = `LaserVisionCable_${name}.pdf`;
+      const blob = pdf.output('blob');
+      return { blob, fileName, pdf };
+    }
+
+    // ── DOWNLOAD PDF (reuses generatePDFBlob) ──
+    async function downloadPDF() {
+      if (!validateRequired()) return;
+
+      const btn = document.querySelector('.btn-download');
+      btn.disabled = true;
+      btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v4m0 8v4M4 12h4m8 0h4"/></svg> Generating…`;
+
+      try {
+        const { blob, pdf } = await generatePDFBlob();
+        pdf.autoPrint();
+        const url = URL.createObjectURL(pdf.output('blob'));
+        window.open(url);
+        URL.revokeObjectURL(url);
+        showToast('Print dialog opened!');
+      } catch (err) {
+        console.error('PDF generation error:', err);
+        showToast('Failed to generate PDF.');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4"/></svg> Download Bill`;
+    }
+
+    // ── SHOW TOAST HELPER ──
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // Spin animation for loader
+    const style = document.createElement('style');
+    style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
+    document.head.appendChild(style);
+  </script>
+</body>
+
+</html>
