@@ -1138,7 +1138,7 @@
       }
 
       const name = (document.getElementById('custName').value || 'Bill').replace(/\s+/g, '_');
-      const fileName = `LaserVisionCable_${name}.pdf`;
+      const fileName = `${name}.pdf`;
       const blob = pdf.output('blob');
       return { blob, fileName, pdf };
     }
@@ -1152,12 +1152,16 @@
       btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v4m0 8v4M4 12h4m8 0h4"/></svg> Generating…`;
 
       try {
-        const { blob, pdf } = await generatePDFBlob();
-        pdf.autoPrint();
-        const url = URL.createObjectURL(pdf.output('blob'));
-        window.open(url);
+        const { blob, fileName } = await generatePDFBlob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        showToast('Print dialog opened!');
+        showToast('PDF Downloaded!');
       } catch (err) {
         console.error('PDF generation error:', err);
         showToast('Failed to generate PDF.');
