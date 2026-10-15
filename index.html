@@ -532,54 +532,86 @@
       /* prevent date from being squished by long names */
     }
 
-    /* Table Wrapper: Occupies at least 45% of A4 page (297mm * 0.45 = 133.65mm) */
+    /* Fixed standard row size bill table */
+    .bill-header,
+    .bill-meta,
+    .bill-table-wrap,
+    .bill-table,
+    .bill-total-bar,
+    .bill-bottom-row,
+    .bill-footer {
+      flex-shrink: 0;
+    }
+
     .bill-table-wrap {
-      min-height: 133.65mm;
-      display: flex;
-      flex-direction: column;
       margin-bottom: 0;
+      width: 100%;
     }
 
     .bill-table {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 0;
-      flex: 1;
+      table-layout: fixed;
+    }
+
+    .bill-table thead tr {
+      height: 38px;
+    }
+
+    .bill-table tbody tr {
+      height: 38px;
     }
 
     .bill-table th {
       background: #eff6ff;
       border: 1px solid #93c5fd;
-      padding: 9px 14px;
+      padding: 0 14px;
+      height: 38px;
       font-size: 13px;
       color: #1e40af;
       font-weight: 700;
-      text-align: left;
+      text-align: center;
+      vertical-align: middle;
+      box-sizing: border-box;
+      line-height: 1.3;
     }
 
     .bill-table th:last-child {
-      text-align: right;
+      text-align: center;
     }
 
     .bill-table td {
       border: 1px solid #dbeafe;
-      padding: 8px 14px;
+      padding: 0 14px;
+      height: 38px;
       font-size: 12.5px;
       color: #111;
+      text-align: center;
+      vertical-align: middle;
+      box-sizing: border-box;
+      line-height: 1.3;
     }
 
     .bill-table td:last-child {
-      text-align: right;
+      text-align: center;
       font-weight: 700;
     }
 
-    /* Spacer rows for blank lines */
+    /* Spacer rows for blank lines: fixed standard height matching data rows */
+    .bill-table .blank-row {
+      height: 38px;
+    }
+
     .bill-table .blank-row td {
-      height: 32px;
+      height: 38px;
       border-left: 1px solid #dbeafe;
       border-right: 1px solid #dbeafe;
       border-top: none;
       border-bottom: none;
+      padding: 0 14px;
+      box-sizing: border-box;
+      line-height: 1.3;
     }
 
     .bill-total-bar {
@@ -812,7 +844,7 @@
         min-width: 210mm !important;
         max-width: 210mm !important;
         min-height: 297mm !important;
-        height: 297mm !important;
+        height: auto !important;
         box-shadow: none !important;
         margin: 0 auto !important;
         padding: 24px 34px !important;
@@ -1068,20 +1100,20 @@
           </div>
         </div>
 
-        <!-- Plans Table (occupies at least 45% of A4 page = 133.65mm) -->
+        <!-- Plans Table (fixed standard row height) -->
         <div class="bill-table-wrap">
           <table class="bill-table">
             <thead>
               <tr>
-                <th>Plan</th>
-                <th style="text-align:center;width:120px;">Start Date</th>
-                <th style="text-align:center;width:120px;">End Date</th>
-                <th style="text-align:right;width:100px;">Amount</th>
+                <th style="width:auto;text-align:center;">Plan</th>
+                <th style="text-align:center;width:125px;">Start Date</th>
+                <th style="text-align:center;width:125px;">End Date</th>
+                <th style="text-align:center;width:110px;">Amount</th>
               </tr>
             </thead>
             <tbody id="prev-plan-rows">
               <tr class="blank-row">
-                <td></td>
+                <td>&nbsp;</td>
                 <td></td>
                 <td></td>
                 <td></td>
@@ -1403,7 +1435,7 @@
       document.getElementById('prev-date').textContent =
         fmtDate(document.getElementById('billDate').value);
 
-      // Plans table
+      // Plans table (fixed standard row height, no shrinking on add/remove)
       const tbody = document.getElementById('prev-plan-rows');
       const activePlans = plans.filter(p => p.plan || p.startDate || p.endDate || p.amount);
       let rows = '';
@@ -1411,14 +1443,14 @@
         const startText = (p.startDate && p.startDate.trim()) ? fmtDate(p.startDate) : '–';
         const endText = (p.endDate && p.endDate.trim()) ? fmtDate(p.endDate) : '–';
         rows += `<tr>
-      <td>${p.plan || ''}</td>
-      <td style="text-align:center;">${startText}</td>
-      <td style="text-align:center;">${endText}</td>
-      <td style="text-align:right;">${p.amount ? p.amount + '/-' : ''}</td>
+      <td style="word-break:break-word;text-align:center;">${p.plan || ''}</td>
+      <td style="text-align:center;white-space:nowrap;">${startText}</td>
+      <td style="text-align:center;white-space:nowrap;">${endText}</td>
+      <td style="text-align:center;white-space:nowrap;">${p.amount ? p.amount + '/-' : ''}</td>
     </tr>`;
       });
-      // Ensure table occupies at least 45% of A4 page (min 11 rows)
-      const minTableRows = 11;
+      // Maintain consistent standard table row size (min 8 rows, fixed standard row height)
+      const minTableRows = 8;
       const blanks = Math.max(0, minTableRows - activePlans.length);
       for (let i = 0; i < blanks; i++) {
         rows += `<tr class="blank-row"><td>&nbsp;</td><td></td><td></td><td></td></tr>`;
@@ -1563,7 +1595,11 @@
     // ── PRINT BILL (NATIVE A4 BROWSER PRINT) ──
     function printBill() {
       if (!validateRequired()) return;
+      const name = (document.getElementById('custName').value || 'Bill').trim().replace(/\s+/g, '_');
+      const originalTitle = document.title;
+      document.title = `${name}_Bill`;
       window.print();
+      setTimeout(() => { document.title = originalTitle; }, 2000);
     }
 
     // ── GENERATE A4 PDF BLOB (GUARANTEED FIXED A4 ON EVERY DEVICE) ──
@@ -1633,55 +1669,70 @@
         heightLeft -= pageH;
       }
 
-      const name = (document.getElementById('custName').value || 'Bill').replace(/\s+/g, '_');
-      const fileName = `${name}.pdf`;
+      const name = (document.getElementById('custName').value || 'Bill').trim().replace(/\s+/g, '_');
+      const fileName = `${name}_Bill.pdf`;
       const blob = pdf.output('blob');
       return { blob, fileName, pdf };
     }
 
-    // ── DOWNLOAD PDF (reuses generatePDFBlob) ──
+    // ── DOWNLOAD / SAVE A4 PDF ──
     async function downloadPDF() {
       if (!validateRequired()) return;
 
+      const name = (document.getElementById('custName').value || 'Bill').trim().replace(/\s+/g, '_');
+      const fileName = `${name}_Bill`;
+      const originalTitle = document.title;
+
       const btn = document.querySelector('.btn-download');
       btn.disabled = true;
+
+      // When opened directly via local file:// protocol:
+      // Chromium strictly sandboxes local files: blob downloads lose their filename (saved as raw UUID like cc404c98-...)
+      // and data: URL downloads are blocked by Chrome security policy.
+      // Therefore, on file://, the browser's native 'Save as PDF' engine is used:
+      // It creates an instant, razor-sharp 100% vector A4 PDF with the exact customer filename pre-filled!
+      if (window.location.protocol === 'file:') {
+        document.title = fileName;
+        showToast(`Opening Save as PDF: Select "Save as PDF" to save ${fileName}.pdf`);
+        setTimeout(() => {
+          window.print();
+          btn.disabled = false;
+          setTimeout(() => { document.title = originalTitle; }, 2000);
+        }, 300);
+        return;
+      }
+
+      // When running on a web server (http:// or https://, e.g. localhost):
+      // Direct 1-click file download works natively without sandbox restrictions!
       btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v4m0 8v4M4 12h4m8 0h4"/></svg> Generating…`;
 
       try {
-        const { blob, fileName, pdf } = await generatePDFBlob();
-
-        let saved = false;
-        // Priority 1: Use jsPDF native save (designed for file:// and cross-browser download management)
+        const { blob, fileName: pdfFileName, pdf } = await generatePDFBlob();
         if (pdf && typeof pdf.save === 'function') {
-          try {
-            pdf.save(fileName);
-            saved = true;
-          } catch (saveErr) {
-            console.warn('pdf.save encountered error, trying fallback:', saveErr);
-          }
-        }
-
-        // Priority 2: Anchor click with 60-second delayed revoke (prevents premature blob cancellation on file://)
-        if (!saved && blob) {
+          pdf.save(`${fileName}.pdf`);
+        } else {
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = fileName;
+          a.download = `${fileName}.pdf`;
           document.body.appendChild(a);
           a.click();
           setTimeout(() => {
             if (document.body.contains(a)) document.body.removeChild(a);
             URL.revokeObjectURL(url);
-          }, 60000);
+          }, 10000);
         }
-        showToast('A4 PDF Downloaded!');
+        showToast(`A4 PDF Downloaded: ${fileName}.pdf`);
       } catch (err) {
         console.error('PDF generation error:', err);
-        showToast('Failed to generate PDF: ' + (err && err.message ? err.message : err));
+        document.title = fileName;
+        showToast('Falling back to Save as PDF...');
+        window.print();
+        setTimeout(() => { document.title = originalTitle; }, 2000);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4"/></svg> Download Bill`;
       }
-
-      btn.disabled = false;
-      btn.innerHTML = `<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4"/></svg> Download Bill`;
     }
 
     // ── SHOW TOAST HELPER ──
