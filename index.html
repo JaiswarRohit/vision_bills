@@ -605,8 +605,8 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      margin-top: auto;
-      padding-top: 24px;
+      margin-top: 14px;
+      padding-top: 0;
       gap: 20px;
     }
 
@@ -619,11 +619,13 @@
 
     .bill-notes p {
       margin-bottom: 4px;
-      font-weight: 600;
+      font-weight: 700;
+      color: #1e40af;
     }
 
     .bill-notes ol {
       padding-left: 20px;
+      margin: 0;
     }
 
     .bill-notes ol li {
@@ -646,7 +648,7 @@
     }
 
     .bill-sign-img-wrap {
-      height: 60px;
+      height: 58px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -654,9 +656,15 @@
     }
 
     .bill-sign-img-wrap img {
-      max-height: 55px;
+      max-height: 54px;
       max-width: 160px;
       object-fit: contain;
+    }
+
+    .bill-sign-blank-space {
+      height: 54px;
+      width: 100%;
+      min-width: 140px;
     }
 
     .bill-sign-title {
@@ -668,10 +676,10 @@
     }
 
     .bill-footer {
-      margin-top: 24px;
+      margin-top: 18px;
       text-align: center;
       border-top: 1px solid #dbeafe;
-      padding-top: 14px;
+      padding-top: 12px;
     }
 
     .bill-footer p {
@@ -963,9 +971,12 @@
       <div>
         <div class="section-label">Authorised Signatory</div>
         <div style="display:flex;flex-direction:column;gap:12px;">
-          <div class="field" style="flex-direction:row;align-items:center;justify-content:space-between;">
-            <label style="cursor:pointer;" for="showSignToggle">Show Authorised Signatory</label>
-            <input type="checkbox" id="showSignToggle" checked onchange="render()" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
+          <div class="field" style="flex-direction:row;align-items:center;justify-content:space-between;background:var(--input-bg);padding:10px 12px;border:1px solid var(--input-border);border-radius:8px;">
+            <div>
+              <label style="cursor:pointer;font-weight:600;color:var(--text);margin-bottom:0;" for="showSignToggle">Leave blank for handwritten signature</label>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px;">Checked: empty space for pen signing &nbsp;|&nbsp; Unchecked: default digital signature</div>
+            </div>
+            <input type="checkbox" id="showSignToggle" onchange="render()" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
           </div>
 
           <div class="field">
@@ -1097,6 +1108,7 @@
             <div class="bill-sign-company" id="prev-sign-company">For LASER VISION CABLE</div>
             <div class="bill-sign-img-wrap">
               <img id="prev-sign-img" alt="Authorised Signatory" />
+              <div id="prev-sign-blank-space" class="bill-sign-blank-space" style="display:none;"></div>
             </div>
             <div class="bill-sign-title" id="prev-sign-title">Authorised Signatory</div>
           </div>
@@ -1122,12 +1134,23 @@
   </div>
 
   <script>
+    // Helper to get local date formatted as YYYY-MM-DD
+    function getTodayISO() {
+      const d = new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    const todayISO = getTodayISO();
+
     // ── STATE ──
     let plans = [
       {
         plan: "50 Mbps Unlimited 365 Days",
-        startDate: "2025-09-09",
-        endDate: "2026-09-10",
+        startDate: todayISO,
+        endDate: "",
         amount: "6000"
       }
     ];
@@ -1152,8 +1175,7 @@
       const signPrevImg = document.getElementById('prev-sign-img');
       if (signPrevImg) signPrevImg.src = DEFAULT_SIGNATURE;
 
-      const today = new Date();
-      document.getElementById('billDate').value = today.toISOString().slice(0, 10);
+      document.getElementById('billDate').value = todayISO;
       renderPlanInputs();
       renderNoteInputs();
       render();
@@ -1281,7 +1303,7 @@
     }
 
     function addPlan() {
-      plans.push({ plan: '', startDate: '', endDate: '', amount: '' });
+      plans.push({ plan: '', startDate: getTodayISO(), endDate: '', amount: '' });
       renderPlanInputs();
       render();
     }
@@ -1397,7 +1419,7 @@
       <td style="text-align:right;">${p.amount ? p.amount + '/-' : ''}</td>
     </tr>`;
       });
-      const blanks = Math.max(3, 5 - activePlans.length);
+      const blanks = Math.max(1, 3 - activePlans.length);
       for (let i = 0; i < blanks; i++) {
         rows += `<tr class="blank-row"><td>&nbsp;</td><td></td><td></td><td></td></tr>`;
       }
@@ -1409,23 +1431,41 @@
       document.getElementById('prev-total').textContent = total ? `${total}/-` : '0/-';
       document.getElementById('prev-words').textContent = total ? numToWords(total) + ' only' : '–';
 
-      // Notes
+      // Notes (positioned directly below table)
       const notesList = document.getElementById('prev-notes');
       notesList.innerHTML = notes.filter(n => n.trim()).map(n => `<li>${n}</li>`).join('');
 
-      // Authorised Signatory
-      const showSign = document.getElementById('showSignToggle').checked;
+      // Authorised Signatory (Checked = Blank space for handwritten signature; Unchecked = Default digital signature)
+      const isBlankSign = document.getElementById('showSignToggle').checked;
       const signBlock = document.getElementById('prev-sign-block');
-      if (showSign) {
-        signBlock.style.display = 'block';
-        const signSrc = uploadedSignatureSrc || DEFAULT_SIGNATURE;
-        document.getElementById('prev-sign-img').src = signSrc;
-        document.getElementById('prev-sign-company').textContent =
-          'For ' + (document.getElementById('companyName').value || 'LASER VISION CABLE');
-        document.getElementById('prev-sign-title').textContent =
-          document.getElementById('signTitle').value || 'Authorised Signatory';
+      const signImg = document.getElementById('prev-sign-img');
+      const blankSpace = document.getElementById('prev-sign-blank-space');
+      const signDropZone = document.getElementById('sign-drop-zone');
+
+      signBlock.style.display = 'block';
+      document.getElementById('prev-sign-company').textContent =
+        'For ' + (document.getElementById('companyName').value || 'LASER VISION CABLE');
+      document.getElementById('prev-sign-title').textContent =
+        document.getElementById('signTitle').value || 'Authorised Signatory';
+
+      if (isBlankSign) {
+        // Checked: show blank space for physical handwritten signing
+        signImg.style.display = 'none';
+        if (blankSpace) blankSpace.style.display = 'block';
+        if (signDropZone) {
+          signDropZone.style.opacity = '0.45';
+          signDropZone.style.pointerEvents = 'none';
+        }
       } else {
-        signBlock.style.display = 'none';
+        // Unchecked: show default digital signature (or custom uploaded signature)
+        if (blankSpace) blankSpace.style.display = 'none';
+        signImg.style.display = 'block';
+        const signSrc = uploadedSignatureSrc || DEFAULT_SIGNATURE;
+        signImg.src = signSrc;
+        if (signDropZone) {
+          signDropZone.style.opacity = '1';
+          signDropZone.style.pointerEvents = 'auto';
+        }
       }
 
       // Contact
