@@ -133,10 +133,23 @@
 
     .btn-download {
       background: var(--accent);
+      color: #fff;
     }
 
     .btn-download:hover {
       background: #2563eb;
+    }
+
+    .btn-print {
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-print:hover {
+      background: var(--panel);
+      border-color: var(--accent);
+      color: var(--accent2);
     }
 
     /* ── MAIN LAYOUT ── */
@@ -289,15 +302,16 @@
     /* ── PREVIEW PANEL ── */
     .preview-panel {
       background: var(--preview-bg);
-      overflow-y: auto;
+      overflow: auto;
       display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 40px 24px;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 20px 48px;
     }
 
     .preview-panel::-webkit-scrollbar {
       width: 6px;
+      height: 6px;
     }
 
     .preview-panel::-webkit-scrollbar-track {
@@ -309,15 +323,97 @@
       border-radius: 4px;
     }
 
-    /* ── BILL TEMPLATE ── */
+    /* Preview Toolbar */
+    .preview-toolbar {
+      width: 210mm;
+      max-width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .preview-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .preview-badge svg {
+      color: var(--accent2);
+    }
+
+    .preview-badge strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .zoom-controls {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .zoom-btn {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: all .15s ease;
+    }
+
+    .zoom-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .zoom-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    #bill-preview-container {
+      width: 210mm;
+      display: flex;
+      justify-content: center;
+      transition: width .2s ease;
+    }
+
+    /* ── BILL TEMPLATE (FIXED A4 SIZE: 210mm x 297mm) ── */
     #bill-preview {
       width: 210mm;
-      background: #fff;
-      color: #000;
-      padding: 28px 32px;
+      min-width: 210mm;
+      max-width: 210mm;
+      min-height: 297mm;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      background: #ffffff;
+      color: #000000;
+      padding: 28px 34px;
       box-shadow: 0 20px 60px var(--shadow);
       font-family: 'Arial', sans-serif;
       position: relative;
+      flex-shrink: 0;
+      margin: 0 auto;
+      transition: transform .2s ease;
     }
 
     .bill-header {
@@ -509,7 +605,8 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      margin-top: 22px;
+      margin-top: auto;
+      padding-top: 24px;
       gap: 20px;
     }
 
@@ -619,10 +716,9 @@
         max-height: 55vh;
       }
 
-      /* Bill preview stays A4 – panel scrolls horizontally */
       .preview-panel {
         overflow-x: auto;
-        padding: 20px 12px;
+        padding: 16px 10px 36px;
       }
 
       .header-actions {
@@ -646,6 +742,72 @@
     .field-error label {
       color: #ef4444 !important;
     }
+
+    /* ── A4 PRINT SPECIFICATIONS (GUARANTEED FIXED A4 FOR ANY PRINTER/DEVICE) ── */
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    @media print {
+      html, body {
+        width: 210mm !important;
+        height: 297mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      /* Hide non-bill UI */
+      header,
+      .form-panel,
+      .preview-toolbar,
+      .header-actions,
+      #toast {
+        display: none !important;
+      }
+
+      .workspace {
+        display: block !important;
+        height: auto !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      .preview-panel {
+        display: block !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: #ffffff !important;
+        overflow: visible !important;
+      }
+
+      #bill-preview-container {
+        display: block !important;
+        width: 210mm !important;
+        margin: 0 auto !important;
+      }
+
+      #bill-preview {
+        width: 210mm !important;
+        min-width: 210mm !important;
+        max-width: 210mm !important;
+        min-height: 297mm !important;
+        height: 297mm !important;
+        box-shadow: none !important;
+        margin: 0 auto !important;
+        padding: 24px 34px !important;
+        box-sizing: border-box !important;
+        transform: none !important;
+        page-break-after: avoid;
+        break-after: avoid;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+    }
   </style>
 </head>
 
@@ -666,6 +828,13 @@
       <div class="tagline">Bill Generator</div>
     </div>
     <div class="header-actions">
+      <button class="btn-action btn-print" onclick="printBill()" title="Print bill directly on A4 paper">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+        Print Bill
+      </button>
       <button class="btn-action btn-download" onclick="downloadPDF()">
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
           <path stroke-linecap="round" stroke-linejoin="round"
@@ -828,7 +997,20 @@
 
     <!-- ── PREVIEW ── -->
     <div class="preview-panel">
-      <div id="bill-preview">
+      <div class="preview-toolbar">
+        <div class="preview-badge">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+          </svg>
+          Print Size: <strong>A4 (210 × 297 mm)</strong>
+        </div>
+        <div class="zoom-controls">
+          <button type="button" class="zoom-btn" id="btn-zoom-fit" onclick="setPreviewZoom('fit')" title="Scale preview to fit your screen">Fit Screen</button>
+          <button type="button" class="zoom-btn active" id="btn-zoom-100" onclick="setPreviewZoom('100')" title="Actual 100% A4 size">100% (A4)</button>
+        </div>
+      </div>
+      <div id="bill-preview-container">
+        <div id="bill-preview">
 
         <!-- Bill Header -->
         <div class="bill-header">
@@ -926,6 +1108,7 @@
           <p>Contact No:- <span id="prev-contact">9594592257 / 8268217279</span></p>
         </div>
 
+      </div>
       </div>
     </div>
   </div>
@@ -1279,31 +1462,117 @@
       return valid;
     }
 
-    // ── GENERATE PDF BLOB ──
+    // ── PREVIEW ZOOM (FOR COMFORTABLE VIEWING ON PHONES/TABLETS) ──
+    let currentZoom = '100';
+
+    function setPreviewZoom(mode) {
+      currentZoom = mode;
+      const bill = document.getElementById('bill-preview');
+      const container = document.getElementById('bill-preview-container');
+      const btnFit = document.getElementById('btn-zoom-fit');
+      const btn100 = document.getElementById('btn-zoom-100');
+
+      if (mode === 'fit') {
+        if (btnFit) btnFit.classList.add('active');
+        if (btn100) btn100.classList.remove('active');
+        applyFitZoom();
+      } else {
+        if (btn100) btn100.classList.add('active');
+        if (btnFit) btnFit.classList.remove('active');
+        if (bill) {
+          bill.style.transform = 'none';
+          bill.style.transformOrigin = 'top center';
+        }
+        if (container) {
+          container.style.width = '210mm';
+          container.style.height = 'auto';
+        }
+      }
+    }
+
+    function applyFitZoom() {
+      if (currentZoom !== 'fit') return;
+      const bill = document.getElementById('bill-preview');
+      const panel = document.querySelector('.preview-panel');
+      const container = document.getElementById('bill-preview-container');
+      if (!bill || !panel) return;
+
+      const panelWidth = panel.clientWidth - 40; // available width
+      const a4WidthPx = 794; // 210mm in px at 96dpi
+      if (panelWidth < a4WidthPx && panelWidth > 220) {
+        const scale = panelWidth / a4WidthPx;
+        bill.style.transformOrigin = 'top center';
+        bill.style.transform = `scale(${scale})`;
+        if (container) {
+          container.style.width = `${panelWidth}px`;
+          container.style.height = `${bill.offsetHeight * scale}px`;
+        }
+      } else {
+        bill.style.transform = 'none';
+        if (container) {
+          container.style.width = '210mm';
+          container.style.height = 'auto';
+        }
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      if (currentZoom === 'fit') applyFitZoom();
+    });
+
+    // ── PRINT BILL (NATIVE A4 BROWSER PRINT) ──
+    function printBill() {
+      if (!validateRequired()) return;
+      window.print();
+    }
+
+    // ── GENERATE A4 PDF BLOB (GUARANTEED FIXED A4 ON EVERY DEVICE) ──
     async function generatePDFBlob() {
       const bill = document.getElementById('bill-preview');
 
-      // Temporarily remove box-shadow so it doesn't artificially inflate the canvas size
+      // Temporarily remove shadow and transform so capture is pixel-perfect standard A4
       const originalShadow = bill.style.boxShadow;
+      const originalTransform = bill.style.transform;
       bill.style.boxShadow = 'none';
+      bill.style.transform = 'none';
 
+      // Capture at crisp 3x scale (~288 DPI for print quality)
       const canvas = await html2canvas(bill, {
-        scale: 4,
+        scale: 3,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
-        windowWidth: 1024
+        width: 794,
+        windowWidth: 1200,
+        onclone: (clonedDoc) => {
+          const clonedBill = clonedDoc.getElementById('bill-preview');
+          if (clonedBill) {
+            clonedBill.style.width = '794px';
+            clonedBill.style.minWidth = '794px';
+            clonedBill.style.maxWidth = '794px';
+            clonedBill.style.minHeight = '1123px';
+            clonedBill.style.transform = 'none';
+            clonedBill.style.margin = '0';
+            clonedBill.style.boxShadow = 'none';
+          }
+        }
       });
 
-      // Restore it after capture
+      // Restore live view styling
       bill.style.boxShadow = originalShadow;
+      bill.style.transform = originalTransform;
 
       const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
 
       const imgData = canvas.toDataURL('image/png');
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
+      const pageW = 210; // Exact A4 mm
+      const pageH = 297; // Exact A4 mm
 
       const ratio = canvas.width / canvas.height;
       const imgW = pageW;
@@ -1312,21 +1581,16 @@
       let heightLeft = imgH;
       let position = 0;
 
-      // First page
-      pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
+      // Page 1
+      pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH, undefined, 'FAST');
       heightLeft -= pageH;
 
-      // Loop over remaining height, adding new pages
-      // By shifting up slightly LESS than the full page height, we prevent a huge gap
-      // from skipping the gap between pages, but html2canvas will always cut exactly
-      // at the height. We'll add a 10px overlap so no text is completely lost in the seam.
-      const overlap = 5;
-
-      while (heightLeft > 8) {
-        position = position - pageH + overlap;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
-        heightLeft -= (pageH - overlap);
+      // Extra page only if content overflows 1 full A4 page
+      while (heightLeft > 4) {
+        position = position - pageH;
+        pdf.addPage('a4', 'portrait');
+        pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH, undefined, 'FAST');
+        heightLeft -= pageH;
       }
 
       const name = (document.getElementById('custName').value || 'Bill').replace(/\s+/g, '_');
@@ -1353,7 +1617,7 @@
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        showToast('PDF Downloaded!');
+        showToast('A4 PDF Downloaded!');
       } catch (err) {
         console.error('PDF generation error:', err);
         showToast('Failed to generate PDF.');
@@ -1369,6 +1633,11 @@
       toast.textContent = message;
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // Auto-select 'fit' zoom mode on narrow mobile devices on first load
+    if (window.innerWidth < 850) {
+      setPreviewZoom('fit');
     }
 
     // Spin animation for loader
