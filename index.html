@@ -11,6 +11,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="src/logo_data.js"></script>
+  <script src="src/signature_data.js"></script>
 
   <style>
     *,
@@ -504,10 +505,19 @@
       color: #1e40af;
     }
 
-    .bill-notes {
+    .bill-bottom-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
       margin-top: 22px;
+      gap: 20px;
+    }
+
+    .bill-notes {
+      flex: 1;
       font-size: 11.5px;
       color: #374151;
+      min-width: 0;
     }
 
     .bill-notes p {
@@ -524,8 +534,44 @@
       line-height: 1.5;
     }
 
+    .bill-sign-block {
+      text-align: center;
+      min-width: 170px;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+
+    .bill-sign-company {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #1e40af;
+      margin-bottom: 4px;
+    }
+
+    .bill-sign-img-wrap {
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+
+    .bill-sign-img-wrap img {
+      max-height: 55px;
+      max-width: 160px;
+      object-fit: contain;
+    }
+
+    .bill-sign-title {
+      border-top: 1.5px solid #1e40af;
+      padding-top: 4px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #1e40af;
+    }
+
     .bill-footer {
-      margin-top: 40px;
+      margin-top: 24px;
       text-align: center;
       border-top: 1px solid #dbeafe;
       padding-top: 14px;
@@ -744,6 +790,40 @@
         </div>
       </div>
 
+      <!-- Authorised Signatory -->
+      <div>
+        <div class="section-label">Authorised Signatory</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="field" style="flex-direction:row;align-items:center;justify-content:space-between;">
+            <label style="cursor:pointer;" for="showSignToggle">Show Authorised Signatory</label>
+            <input type="checkbox" id="showSignToggle" checked onchange="render()" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
+          </div>
+
+          <div class="field">
+            <label>Signatory Title</label>
+            <input id="signTitle" value="Authorised Signatory" oninput="render()" placeholder="Authorised Signatory" />
+          </div>
+
+          <div class="field">
+            <label>Signature Image</label>
+            <div id="sign-drop-zone" onclick="document.getElementById('signFileInput').click()"
+              style="border:2px dashed var(--input-border);border-radius:10px;padding:12px;cursor:pointer;text-align:center;transition:border-color .2s;background:var(--input-bg);position:relative;">
+              <input type="file" id="signFileInput" accept="image/*" style="display:none"
+                onchange="handleSignUpload(event)" />
+              <div id="sign-preview-wrap" style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                <img id="sign-form-preview-img"
+                  style="max-height:48px;max-width:100%;border-radius:4px;object-fit:contain;background:#ffffff;padding:2px 8px;border:1px solid var(--input-border);" />
+                <div style="display:flex;gap:10px;margin-top:2px;">
+                  <span style="font-size:11px;color:var(--accent);text-decoration:underline;cursor:pointer;">Change Signature</span>
+                  <button type="button" onclick="resetSignature(event)"
+                    style="font-size:11px;color:#ef4444;background:transparent;border:none;cursor:pointer;text-decoration:underline;">Reset to Default</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- ── PREVIEW ── -->
@@ -792,19 +872,27 @@
           <thead>
             <tr>
               <th>Plan</th>
-              <th style="text-align:right;">Amount</th>
+              <th style="text-align:center;width:120px;">Start Date</th>
+              <th style="text-align:center;width:120px;">End Date</th>
+              <th style="text-align:right;width:100px;">Amount</th>
             </tr>
           </thead>
           <tbody id="prev-plan-rows">
             <tr class="blank-row">
               <td></td>
               <td></td>
-            </tr>
-            <tr class="blank-row">
               <td></td>
               <td></td>
             </tr>
             <tr class="blank-row">
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr class="blank-row">
+              <td></td>
+              <td></td>
               <td></td>
               <td></td>
             </tr>
@@ -817,10 +905,19 @@
           <div class="bill-total-amt">Total Amount : <span id="prev-total">0/-</span></div>
         </div>
 
-        <!-- Notes -->
-        <div class="bill-notes">
-          <p>Note:</p>
-          <ol id="prev-notes"></ol>
+        <!-- Notes & Signature Row -->
+        <div class="bill-bottom-row">
+          <div class="bill-notes">
+            <p>Note:</p>
+            <ol id="prev-notes"></ol>
+          </div>
+          <div class="bill-sign-block" id="prev-sign-block">
+            <div class="bill-sign-company" id="prev-sign-company">For LASER VISION CABLE</div>
+            <div class="bill-sign-img-wrap">
+              <img id="prev-sign-img" alt="Authorised Signatory" />
+            </div>
+            <div class="bill-sign-title" id="prev-sign-title">Authorised Signatory</div>
+          </div>
         </div>
 
         <!-- Footer -->
@@ -844,7 +941,12 @@
   <script>
     // ── STATE ──
     let plans = [
-      { plan: "50 Mbps Unlimited 365 Days (09/09/25 to 10/09/26)", amount: "6000" }
+      {
+        plan: "50 Mbps Unlimited 365 Days",
+        startDate: "2025-09-09",
+        endDate: "2026-09-10",
+        amount: "6000"
+      }
     ];
     let notes = [
       "Installation Charges will not be Refundable.",
@@ -852,13 +954,21 @@
       "Please Ensure your wireless Router is Secure, \"LASER VISION CABLE\", will not be responsible of any unauthorised internet."
     ];
     let uploadedLogoSrc = null;
+    let uploadedSignatureSrc = null;
     // Use embedded base64 data URL from src/logo_data.js (avoids file:// taint)
     const DEFAULT_LOGO = (typeof LOGO_DATA_URL !== 'undefined') ? LOGO_DATA_URL : 'src/logo.png';
+    const DEFAULT_SIGNATURE = (typeof SIGNATURE_DATA_URL !== 'undefined') ? SIGNATURE_DATA_URL : 'src/signature.png';
 
     // ── INIT ──
     window.addEventListener('DOMContentLoaded', () => {
       // Set default logo src from embedded data
       document.getElementById('prev-logo-img').src = DEFAULT_LOGO;
+      // Set default signature src
+      const signFormImg = document.getElementById('sign-form-preview-img');
+      if (signFormImg) signFormImg.src = DEFAULT_SIGNATURE;
+      const signPrevImg = document.getElementById('prev-sign-img');
+      if (signPrevImg) signPrevImg.src = DEFAULT_SIGNATURE;
+
       const today = new Date();
       document.getElementById('billDate').value = today.toISOString().slice(0, 10);
       renderPlanInputs();
@@ -875,7 +985,44 @@
         const file = e.dataTransfer.files[0];
         if (file && file.type.startsWith('image/')) processLogoFile(file);
       });
+
+      // Drag-over highlight on signature drop zone
+      const sz = document.getElementById('sign-drop-zone');
+      if (sz) {
+        sz.addEventListener('dragover', e => { e.preventDefault(); sz.style.borderColor = 'var(--accent)'; });
+        sz.addEventListener('dragleave', () => { sz.style.borderColor = 'var(--input-border)'; });
+        sz.addEventListener('drop', e => {
+          e.preventDefault();
+          sz.style.borderColor = 'var(--input-border)';
+          const file = e.dataTransfer.files[0];
+          if (file && file.type.startsWith('image/')) processSignFile(file);
+        });
+      }
     });
+
+    // ── SIGNATURE UPLOAD ──
+    function handleSignUpload(e) {
+      const file = e.target.files[0];
+      if (file) processSignFile(file);
+    }
+
+    function processSignFile(file) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        uploadedSignatureSrc = ev.target.result;
+        document.getElementById('sign-form-preview-img').src = uploadedSignatureSrc;
+        render();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function resetSignature(e) {
+      if (e) e.stopPropagation();
+      uploadedSignatureSrc = null;
+      document.getElementById('sign-form-preview-img').src = DEFAULT_SIGNATURE;
+      document.getElementById('signFileInput').value = '';
+      render();
+    }
 
     // ── LOGO UPLOAD ──
     function handleLogoUpload(e) {
@@ -916,19 +1063,42 @@
       c.innerHTML = '';
       plans.forEach((p, i) => {
         const div = document.createElement('div');
-        div.className = 'plan-row';
+        div.className = 'plan-card';
+        div.style.cssText = 'background:var(--input-bg);border:1px solid var(--input-border);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;';
         div.innerHTML = `
-      <input style="grid-column:1" value="${p.plan}" placeholder="Plan description" oninput="plans[${i}].plan=this.value;render()" />
-      <span class="amount-prefix">₹</span>
-      <input value="${p.amount}" placeholder="0" type="number" min="0" oninput="plans[${i}].amount=this.value;render()" />
-      <button class="icon-btn" onclick="removePlan(${i})" title="Remove">✕</button>
-    `;
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input value="${p.plan || ''}" placeholder="Plan Description (e.g. 50 Mbps Unlimited)" oninput="plans[${i}].plan=this.value;render()" style="flex:1;background:var(--panel);border:1px solid var(--input-border);border-radius:6px;padding:8px 10px;color:var(--text);font-family:DM Sans,sans-serif;font-size:13px;outline:none;" />
+            <button class="icon-btn" onclick="removePlan(${i})" title="Remove Plan" style="flex-shrink:0;">✕</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 90px;gap:8px;">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+                <label style="font-size:11px;color:var(--muted);font-weight:500;">Start Date</label>
+                ${(p.startDate && p.startDate.trim()) ? `<button type="button" onclick="plans[${i}].startDate='';renderPlanInputs();render();" style="font-size:10px;color:#ef4444;background:transparent;border:none;cursor:pointer;padding:0;text-decoration:underline;">Clear</button>` : ''}
+              </div>
+              <input type="date" value="${p.startDate || ''}" oninput="plans[${i}].startDate=this.value;render()" onchange="plans[${i}].startDate=this.value;renderPlanInputs();render()" style="width:100%;background:var(--panel);border:1px solid var(--input-border);border-radius:6px;padding:6px 8px;color:var(--text);font-family:DM Sans,sans-serif;font-size:12px;outline:none;" />
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+                <label style="font-size:11px;color:var(--muted);font-weight:500;">End Date</label>
+                ${(p.endDate && p.endDate.trim()) ? `<button type="button" onclick="plans[${i}].endDate='';renderPlanInputs();render();" style="font-size:10px;color:#ef4444;background:transparent;border:none;cursor:pointer;padding:0;text-decoration:underline;">Clear</button>` : ''}
+              </div>
+              <input type="date" value="${p.endDate || ''}" oninput="plans[${i}].endDate=this.value;render()" onchange="plans[${i}].endDate=this.value;renderPlanInputs();render()" style="width:100%;background:var(--panel);border:1px solid var(--input-border);border-radius:6px;padding:6px 8px;color:var(--text);font-family:DM Sans,sans-serif;font-size:12px;outline:none;" />
+            </div>
+            <div>
+              <div style="margin-bottom:3px;">
+                <label style="font-size:11px;color:var(--muted);font-weight:500;">Amount (₹)</label>
+              </div>
+              <input type="number" min="0" value="${p.amount || ''}" placeholder="0" oninput="plans[${i}].amount=this.value;render()" style="width:100%;background:var(--panel);border:1px solid var(--input-border);border-radius:6px;padding:6px 8px;color:var(--text);font-family:DM Sans,sans-serif;font-size:12px;outline:none;" />
+            </div>
+          </div>
+        `;
         c.appendChild(div);
       });
     }
 
     function addPlan() {
-      plans.push({ plan: '', amount: '' });
+      plans.push({ plan: '', startDate: '', endDate: '', amount: '' });
       renderPlanInputs();
       render();
     }
@@ -985,8 +1155,10 @@
 
     // ── FORMAT DATE ──
     function fmtDate(val) {
-      if (!val) return '–';
-      const [y, m, d] = val.split('-');
+      if (!val || typeof val !== 'string' || !val.trim() || val === '–' || val === '-') return '–';
+      const parts = val.trim().split('-');
+      if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return '–';
+      const [y, m, d] = parts;
       return `${d} / ${m} / ${y}`;
     }
 
@@ -1030,19 +1202,24 @@
 
       // Plans table
       const tbody = document.getElementById('prev-plan-rows');
-      const activePlans = plans.filter(p => p.plan || p.amount);
+      const activePlans = plans.filter(p => p.plan || p.startDate || p.endDate || p.amount);
       let rows = '';
       activePlans.forEach(p => {
+        const startText = (p.startDate && p.startDate.trim()) ? fmtDate(p.startDate) : '–';
+        const endText = (p.endDate && p.endDate.trim()) ? fmtDate(p.endDate) : '–';
         rows += `<tr>
       <td>${p.plan || ''}</td>
-      <td>${p.amount ? p.amount + '/-' : ''}</td>
+      <td style="text-align:center;">${startText}</td>
+      <td style="text-align:center;">${endText}</td>
+      <td style="text-align:right;">${p.amount ? p.amount + '/-' : ''}</td>
     </tr>`;
       });
       const blanks = Math.max(3, 5 - activePlans.length);
       for (let i = 0; i < blanks; i++) {
-        rows += `<tr class="blank-row"><td>&nbsp;</td><td></td></tr>`;
+        rows += `<tr class="blank-row"><td>&nbsp;</td><td></td><td></td><td></td></tr>`;
       }
       tbody.innerHTML = rows;
+
 
       // Total
       const total = plans.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
@@ -1052,6 +1229,21 @@
       // Notes
       const notesList = document.getElementById('prev-notes');
       notesList.innerHTML = notes.filter(n => n.trim()).map(n => `<li>${n}</li>`).join('');
+
+      // Authorised Signatory
+      const showSign = document.getElementById('showSignToggle').checked;
+      const signBlock = document.getElementById('prev-sign-block');
+      if (showSign) {
+        signBlock.style.display = 'block';
+        const signSrc = uploadedSignatureSrc || DEFAULT_SIGNATURE;
+        document.getElementById('prev-sign-img').src = signSrc;
+        document.getElementById('prev-sign-company').textContent =
+          'For ' + (document.getElementById('companyName').value || 'LASER VISION CABLE');
+        document.getElementById('prev-sign-title').textContent =
+          document.getElementById('signTitle').value || 'Authorised Signatory';
+      } else {
+        signBlock.style.display = 'none';
+      }
 
       // Contact
       document.getElementById('prev-contact').textContent =
